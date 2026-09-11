@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AQUASHIELD | Satellite Oil Spill Detection & AIS Vessel Attribution</title>
+  <meta name="description" content="AQUASHIELD combines satellite imagery, AI-powered spill detection, and AIS vessel movements to investigate maritime pollution faster and with confidence.">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="tactical-grid-bg">
+
+  <!-- =========================================================================
+       GLOBAL HEADER & NAVIGATION
+       ========================================================================= -->
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a href="#" class="brand-wrapper">
+        <div class="brand-icon-box">
+          <i data-lucide="shield-alert" class="w-5 h-5"></i>
+        </div>
+        <div class="brand-text-block">
+          <div class="brand-name">
+            AQUASHIELD <span class="brand-badge">MARITIME AI</span>
+          </div>
+          <span class="brand-tagline">Satellite Oil Spill Surveillance & AIS Attribution</span>
+        </div>
+      </a>
+
+      <nav>
+        <ul class="nav-menu">
+          <li><a href="#dashboard" class="nav-link active">Live Map</a></li>
+          <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+          <li><a href="#capabilities" class="nav-link">Capabilities</a></li>
+          <li><a href="#investigation" class="nav-link">Case Investigation</a></li>
+          <li><a href="#methodology" class="nav-link">Methodology</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <div class="telemetry-pill">
+          <span class="pulse-dot-green"></span>
+          <span>14 SAR PASSES TODAY</span>
+        </div>
+        <a href="#dashboard" class="btn btn-primary btn-sm">
+          <i data-lucide="map-pin" class="w-4 h-4"></i> View Live Map
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       HERO SECTION
+       ========================================================================= -->
+  <section class="hero-section">
+    <div class="hero-glow-orb"></div>
+    <div class="hero-radar-reticle"></div>
+
+    <div class="container hero-content">
+      <div class="hero-alert-badge">
+        <span class="pulse-dot-red"></span>
+        <span>AUTONOMOUS REMOTE SENSING & FORENSIC VESSEL ATTRIBUTION</span>
+      </div>
+
+      <h1 class="hero-headline">
+        Detect Oil Spills. <br>
+        <span class="highlight">Trace Responsible Vessels.</span>
+      </h1>
+
+      <p class="hero-subheadline">
+        Combine satellite imagery, AI-powered spill detection, and AIS vessel movements to investigate maritime pollution faster and with confidence.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#dashboard" class="btn btn-primary">
+          <i data-lucide="satellite" class="w-5 h-5"></i> View Live Map
+        </a>
+        <a href="#how-it-works" class="btn btn-secondary">
+          <i data-lucide="layers" class="w-5 h-5"></i> Explore How It Works
+        </a>
+      </div>
+
+      <!-- Real-Time Telemetry Stats Strip -->
+      <div class="hero-stats-strip">
+        <div class="stat-item">
+          <div class="stat-value cyan" id="stat-slicks">4,820+</div>
+          <div class="stat-label">Slicks Segmented</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value green" id="stat-precision">94.8%</div>
+          <div class="stat-label">Attribution Precision</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value cyan" id="stat-ais">1.4M+</div>
+          <div class="stat-label">Daily AIS Ships Tracked</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value amber" id="stat-time">&lt; 18 min</div>
+          <div class="stat-label">Mean Lead Generation</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       INTERACTIVE DASHBOARD PREVIEW SECTION
+       ========================================================================= -->
+  <section id="dashboard" class="dashboard-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <i data-lucide="radar" class="w-4 h-4"></i> Tactical GIS Intelligence
+        </div>
+        <h2 class="section-title">Interactive Ocean Surveillance Dashboard</h2>
+        <p class="section-desc">
+          Inspect detected oil-spill polygons, correlate historical AIS vessel trajectories, and view algorithmic culpability rankings in real-time.
+        </p>
+      </div>
+
+      <!-- Command Center Frame -->
+      <div class="c2-frame">
+        <!-- Top Toolbar -->
+        <div class="c2-topbar">
+          <!-- Scenario Switcher -->
+          <div class="c2-scenarios">
+            <label for="scenario-select">
+              <i data-lucide="globe-2" class="w-4 h-4 text-cyan"></i> SECTOR:
+            </label>
+            <select id="scenario-select" class="scenario-select-input">
+              <option value="malacca_strait">Strait of Malacca (Active Tanker Discharge)</option>
+              <option value="persian_gulf">Persian Gulf (Dark Ship Ghost Spill)</option>
+              <option value="north_sea">North Sea (Offshore Platform Spill)</option>
+              <option value="mediterranean_bloom">Ligurian Sea (Algae Look-Alike Test)</option>
+            </select>
+          </div>
+
+          <!-- Severity Filter Pills -->
+          <div class="c2-layers-controls">
+            <span class="text-dim font-mono text-xs" style="margin-right: 0.25rem;">SEVERITY:</span>
+            <button class="filter-badge-btn active" data-severity="all">ALL</button>
+            <button class="filter-badge-btn red" data-severity="high">
+              <span class="legend-color-dot red" style="width: 7px; height: 7px;"></span> HIGH
+            </button>
+            <button class="filter-badge-btn orange" data-severity="medium">
+              <span class="legend-color-dot orange" style="width: 7px; height: 7px;"></span> MEDIUM
+            </button>
+            <button class="filter-badge-btn amber" data-severity="low">
+              <span class="legend-color-dot amber" style="width: 7px; height: 7px;"></span> LOW
+            </button>
+          </div>
+
+          <!-- Layer Toggles -->
+          <div class="c2-layers-controls">
+            <button id="btn-toggle-dossier" class="btn btn-primary btn-sm">
+              <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i> Export Evidence Dossier
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard Body: Map + Side Panel -->
+        <div class="c2-body">
+          <!-- Left: Map Container -->
+          <div class="map-container-wrapper">
+            <div id="leaflet-map"></div>
+
+            <!-- Floating Overlay Mode Switcher -->
+            <div class="map-overlay-controls">
+              <div class="map-floating-panel">
+                <h4><i data-lucide="layers" class="w-3.5 h-3.5 text-cyan"></i> Imagery Layer</h4>
+                <div class="map-overlay-toggles">
+                  <button class="toggle-chip active" data-layer="dark">Nautical Dark</button>
+                  <button class="toggle-chip" data-layer="sar">Sentinel-1 SAR Radar</button>
+                  <button class="toggle-chip" data-layer="optical">Sentinel-2 Optical</button>
+                  <button class="toggle-chip" data-layer="drift">MetOcean Current</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Floating Coordinates Reticle HUD -->
+            <div class="map-hud-readout">
+              <span class="pulse-dot-green"></span>
+              <span id="map-coords-hud">LAT: 02°27'06"N | LON: 101°53'03"E</span>
+              <span class="text-dim">|</span>
+              <span id="map-zoom-hud">ZOOM: 12X</span>
+            </div>
+
+            <!-- Map Legend Box -->
+            <div class="map-legend-box">
+              <div class="legend-row">
+                <span class="legend-color-dot red"></span>
+                <span>High Severity Spill (&gt;100 m³)</span>
+              </div>
+              <div class="legend-row">
+                <span class="legend-color-dot orange"></span>
+                <span>Medium Severity Spill (10-100 m³)</span>
+              </div>
+              <div class="legend-row">
+                <span class="legend-color-dot amber"></span>
+                <span>Low / Sheen (&lt;10 m³)</span>
+              </div>
+              <div class="legend-row">
+                <span class="legend-color-dot cyan"></span>
+                <span>Correlated AIS Vessel Track</span>
+              </div>
+            </div>
+
+            <!-- Interactive Timeline Scrubber Bar -->
+            <div class="timeline-scrubber-bar">
+              <button id="timeline-play-btn" class="timeline-play-btn" title="Play/Pause Historical Movement">
+                <i data-lucide="play" class="w-4 h-4" id="play-btn-icon"></i>
+              </button>
+
+              <div class="timeline-track-wrap">
+                <div class="timeline-labels-row">
+                  <span>-48h (Hindcast Start)</span>
+                  <span>-24h (Drift Advection)</span>
+                  <span>-12h (Estimated Discharge)</span>
+                  <span>-2h (CPA Approach)</span>
+                  <span class="text-cyan font-bold">0h (Satellite Acquisition)</span>
+                </div>
+                <input type="range" id="timeline-slider" class="timeline-slider-input" min="-48" max="0" value="0" step="0.5">
+              </div>
+
+              <div class="timeline-readout-pill" id="timeline-time-display">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                <span id="timeline-val-text">0.0h (Acquisition Time)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Attribution & Suspect Ranking Side Panel -->
+          <div class="c2-sidepanel">
+            <div class="sidepanel-header">
+              <div class="sidepanel-title">
+                <span>Suspect Attribution Matrix</span>
+                <span class="brand-badge" id="vessels-scanned-badge">4 CANDIDATES</span>
+              </div>
+              <div class="sidepanel-incident-meta">
+                <div class="meta-box">
+                  <span class="lbl">SLICK EXTENT</span>
+                  <span class="val text-amber" id="panel-slick-area">16.5 km²</span>
+                </div>
+                <div class="meta-box">
+                  <span class="lbl">BONN VOLUME</span>
+                  <span class="val text-red" id="panel-slick-volume">310.5 m³</span>
+                </div>
+                <div class="meta-box">
+                  <span class="lbl">WEATHERING AGE</span>
+                  <span class="val" id="panel-slick-age">4.8 Hours</span>
+                </div>
+                <div class="meta-box">
+                  <span class="lbl">TOP SUSPECT</span>
+                  <span class="val text-red" id="panel-top-suspect">MT OCEAN PHOENIX</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ranked Vessel Candidate List -->
+            <div class="sidepanel-list-wrap" id="vessel-cards-container">
+              <!-- Vessel cards dynamically injected via app.js -->
+            </div>
+
+            <!-- Side Panel Action Footer -->
+            <div class="sidepanel-footer">
+              <button id="btn-open-dossier-panel" class="btn btn-secondary btn-sm" style="flex: 1;">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-cyan"></i> Inspect Evidence Dossier
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       HOW IT WORKS SECTION (Four-Step Workflow)
+       ========================================================================= -->
+  <section id="how-it-works" class="how-it-works-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <i data-lucide="cpu" class="w-4 h-4"></i> Autonomous Investigation Pipeline
+        </div>
+        <h2 class="section-title">How AQUASHIELD Works</h2>
+        <p class="section-desc">
+          An end-to-end multi-stage pipeline fusing synthetic aperture radar, Lagrangian hydrodynamic modeling, and maritime kinematics to deliver high-confidence attribution leads.
+        </p>
+      </div>
+
+      <div class="steps-grid">
+        <!-- Step 1 -->
+        <div class="step-card">
+          <div class="step-num-badge">01</div>
+          <h3 class="step-title">Ingest Satellite Imagery</h3>
+          <p class="step-desc">
+            Constantly task and ingest Synthetic Aperture Radar (Sentinel-1 C-Band, RADARSAT Constellation) and optical multispectral imagery (Sentinel-2, PlanetScope). SAR penetrates thick cloud cover, rain, and oceanic darkness 24/7.
+          </p>
+          <div class="step-tech-specs">
+            <i data-lucide="radio" class="w-3.5 h-3.5"></i> Sentinel-1 SAR VV/VH (10m Res)
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card">
+          <div class="step-num-badge">02</div>
+          <h3 class="step-title">Detect Anomalous Slicks</h3>
+          <p class="step-desc">
+            Deep convolutional neural networks analyze surface capillary wave damping (dark backscatter patches) and cross-reference surface wind fields to reject biogenic look-alikes like algal blooms, upwellings, and low-wind calm water.
+          </p>
+          <div class="step-tech-specs">
+            <i data-lucide="activity" class="w-3.5 h-3.5"></i> CNN Segmentation &amp; Bonn Code Sizing
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card">
+          <div class="step-num-badge">03</div>
+          <h3 class="step-title">Match Location &amp; Timing</h3>
+          <p class="step-desc">
+            Reverse Lagrangian hydrodynamic hindcasting inverts surface ocean currents (Copernicus CMEMS) and windage advection (3.2% wind drift + Coriolis deflection) to trace the slick back to its discrete release origin coordinates (lat₀, lon₀) at time t₀.
+          </p>
+          <div class="step-tech-specs">
+            <i data-lucide="history" class="w-3.5 h-3.5"></i> Reverse Lagrangian Advection (48h)
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-card">
+          <div class="step-num-badge">04</div>
+          <h3 class="step-title">Rank Responsible Vessels</h3>
+          <p class="step-desc">
+            Spatially and chronologically query global AIS vessel movements. Calculate Closest Point of Approach (CPA), detect deliberate transponder dark-gaps, and score speed drop anomalies characteristic of illegal oily bilge washing.
+          </p>
+          <div class="step-tech-specs">
+            <i data-lucide="award" class="w-3.5 h-3.5"></i> Multi-Criteria Forensic Culpability Matrix
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       KEY CAPABILITIES SECTION (6 High-Impact Cards)
+       ========================================================================= -->
+  <section id="capabilities" class="capabilities-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <i data-lucide="zap" class="w-4 h-4"></i> Maritime Domain Awareness
+        </div>
+        <h2 class="section-title">Key Investigative Capabilities</h2>
+        <p class="section-desc">
+          Built to empower maritime authorities, coast guards, port state controls, and marine insurers with actionable, evidence-grade pollution intelligence.
+        </p>
+      </div>
+
+      <div class="capabilities-grid">
+        <!-- Capability 1 -->
+        <div class="capability-card">
+          <div class="cap-icon-box">
+            <i data-lucide="satellite" class="w-6 h-6"></i>
+          </div>
+          <h3 class="cap-title">Satellite-Based Spill Detection</h3>
+          <p class="cap-desc">
+            High-precision segmentation of crude oil, heavy fuel oil (HFO), and refined slicks using C-Band SAR backscatter damping and optical multispectral indexes.
+          </p>
+          <ul class="cap-feature-list">
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> All-weather day/night radar penetration</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Automatic Bonn Agreement volumetric sizing</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Automated look-alike false-alarm rejection</li>
+          </ul>
+        </div>
+
+        <!-- Capability 2 -->
+        <div class="capability-card">
+          <div class="cap-icon-box">
+            <i data-lucide="navigation-2" class="w-6 h-6"></i>
+          </div>
+          <h3 class="cap-title">AIS Correlation &amp; Attribution</h3>
+          <p class="cap-desc">
+            Automated correlation of global terrestrial and satellite AIS data against backtracked slick origin points and trailing wake vectors.
+          </p>
+          <ul class="cap-feature-list">
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Sub-nautical-mile CPA trajectory analysis</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Multi-factor culpability confidence scoring (0-100%)</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Direct stern-connected "caught in the act" alerts</li>
+          </ul>
+        </div>
+
+        <!-- Capability 3 -->
+        <div class="capability-card">
+          <div class="cap-icon-box">
+            <i data-lucide="eye-off" class="w-6 h-6"></i>
+          </div>
+          <h3 class="cap-title">Dark-Vessel &amp; AIS-Gap Analysis</h3>
+          <p class="cap-desc">
+            Detects intentional AIS transponder blackouts where illicit polluters deactivate transmitters while discharging oily ballast, then power them back on.
+          </p>
+          <ul class="cap-feature-list">
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Dead-reckoning kinematic gap reconstruction</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> CFAR metallic vessel radar target matching</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Spoofing and MMSI identity jump detection</li>
+          </ul>
+        </div>
+
+        <!-- Capability 4 -->
+        <div class="capability-card">
+          <div class="cap-icon-box">
+            <i data-lucide="history" class="w-6 h-6"></i>
+          </div>
+          <h3 class="cap-title">Historical Incident Reconstruction</h3>
+          <p class="cap-desc">
+            Interactive timeline scrubber and hydrodynamic hindcasting allow investigators to step backward and forward through oceanic drift conditions.
+          </p>
+          <ul class="cap-feature-list">
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> -48h to +72h drift trajectory animation</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Fay spreading &amp; ADIOS weathering dissipation models</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Coastal beaching time-to-impact forecasts</li>
+          </ul>
+        </div>
+
+        <!-- Capability 5 -->
+        <div class="capability-card">
+          <div class="cap-icon-box">
+            <i data-lucide="bell-ring" class="w-6 h-6"></i>
+          </div>
+          <h3 class="cap-title">Automated Alerts &amp; Reports</h3>
+          <p class="cap-desc">
+            Instantly dispatch push notifications, webhooks, and tactical emails to coast guards and regional response centers upon confirmed spill detection.
+          </p>
+          <ul class="cap-feature-list">
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Webhook integration for maritime operations centers</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Priority escalation for marine sanctuaries</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Instant telemetry payload with GPS coordinates</li>
+          </ul>
+        </div>
+
+        <!-- Capability 6 -->
+        <div class="capability-card">
+          <div class="cap-icon-box">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <h3 class="cap-title">Exportable Legal Evidence</h3>
+          <p class="cap-desc">
+            Produces structured, tamper-evident investigative dossiers compliant with IMO MARPOL Annex I evidentiary protocols for port state inspections.
+          </p>
+          <ul class="cap-feature-list">
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> SHA-256 cryptographic image and track hashing</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> One-click court-ready PDF and JSON export</li>
+            <li><i data-lucide="check" class="w-3.5 h-3.5"></i> Complete chain-of-custody metadata logs</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       INVESTIGATION EXAMPLE / REALISTIC CASE STUDY SECTION
+       ========================================================================= -->
+  <section id="investigation" class="case-study-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <i data-lucide="file-search" class="w-4 h-4"></i> Forensic Case Dossier
+        </div>
+        <h2 class="section-title">Investigation Example: Strait of Malacca</h2>
+        <p class="section-desc">
+          Walkthrough of a real-world synthetic benchmark demonstrating satellite detection, reverse hydrodynamic rewind, and high-probability attribution.
+        </p>
+      </div>
+
+      <!-- Case Study Frame -->
+      <div class="case-study-frame">
+        <div class="case-header-bar">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <span class="case-id-tag">INCIDENT #OSI-2026-084</span>
+            <h3 class="case-title">Active Discharge in Traffic Separation Scheme</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="brand-badge" style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: rgba(239, 68, 68, 0.4);">
+              CONFIRMED DISCHARGE
+            </span>
+            <button id="btn-view-case-dossier" class="btn btn-primary btn-sm">
+              <i data-lucide="file-check" class="w-3.5 h-3.5"></i> View Legal Evidence Dossier
+            </button>
+          </div>
+        </div>
+
+        <div class="case-body-grid">
+          <!-- Left: Satellite Imagery Visualizer -->
+          <div class="case-imagery-box">
+            <div class="case-img-container">
+              <img id="case-study-img" src="/static/data/images/sar_malacca_active.png" alt="Sentinel-1 SAR Satellite Image" class="case-img">
+            </div>
+
+            <div class="case-view-controls">
+              <div class="case-tabs">
+                <button class="case-tab-btn active" data-img="/static/data/images/sar_malacca_active.png">SAR C-Band Backscatter</button>
+                <button class="case-tab-btn" data-img="/static/data/images/sar_persian_gulf_drifted.png">Persian Gulf Ghost Spill</button>
+                <button class="case-tab-btn" data-img="/static/data/images/optical_mediterranean_lookalike.png">Optical Algae Filter</button>
+              </div>
+              <span class="text-cyan font-mono" id="case-sensor-label">SENSOR: SENTINEL-1B C-BAND</span>
+            </div>
+          </div>
+
+          <!-- Right: Investigation Findings & Disclaimer -->
+          <div class="case-details-box">
+            <!-- Key Incident Metrics Grid -->
+            <div class="evidence-metrics-grid">
+              <div class="evidence-card">
+                <span class="lbl">Slick Dimensions</span>
+                <div class="val text-amber">16.5 km <span class="sub">&times; 420 m</span></div>
+                <span class="sub">Surface area: 16.5 km²</span>
+              </div>
+              <div class="evidence-card">
+                <span class="lbl">Estimated Volume</span>
+                <div class="val text-red">310.5 m³ <span class="sub">(~1,950 bbls)</span></div>
+                <span class="sub">Bonn Agreement Code 4/5</span>
+              </div>
+              <div class="evidence-card">
+                <span class="lbl">Closest Point of Approach</span>
+                <div class="val text-cyan">0.08 nm <span class="sub">(148 m)</span></div>
+                <span class="sub">Direct stern-plume contact</span>
+              </div>
+              <div class="evidence-card">
+                <span class="lbl">Discharge Window</span>
+                <div class="val">01:45 - 03:14 UTC</div>
+                <span class="sub">Overlaps tanker transit</span>
+              </div>
+            </div>
+
+            <!-- Ranked Suspect List Table -->
+            <div class="suspects-table-wrapper">
+              <div class="suspect-table-title">
+                <span>Ranked Candidate Vessels in Proximity Window</span>
+                <span class="text-cyan font-mono">4 SCANNED</span>
+              </div>
+              <table class="suspect-table">
+                <thead>
+                  <tr>
+                    <th>VESSEL NAME</th>
+                    <th>TYPE</th>
+                    <th>FLAG</th>
+                    <th>CPA DIST</th>
+                    <th>CONFIDENCE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="top-culprit">
+                    <td>
+                      <span class="text-red">●</span> MT OCEAN PHOENIX
+                    </td>
+                    <td>VLCC Tanker</td>
+                    <td>Panama</td>
+                    <td>0.08 nm</td>
+                    <td><span class="confidence-badge conf-high">94.8% HIGH</span></td>
+                  </tr>
+                  <tr>
+                    <td>EVER GLORY</td>
+                    <td>Container</td>
+                    <td>Germany</td>
+                    <td>4.82 nm</td>
+                    <td><span class="confidence-badge conf-low">18.2% LOW</span></td>
+                  </tr>
+                  <tr>
+                    <td>PACIFIC TRADER</td>
+                    <td>Bulk Carrier</td>
+                    <td>Liberia</td>
+                    <td>6.15 nm</td>
+                    <td><span class="confidence-badge conf-low">12.5% LOW</span></td>
+                  </tr>
+                  <tr>
+                    <td>KOTA RAJA</td>
+                    <td>Feeder Box</td>
+                    <td>Singapore</td>
+                    <td>8.40 nm</td>
+                    <td><span class="confidence-badge conf-low">4.1% LOW</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Clear Legal Attribution Disclaimer -->
+            <div class="legal-disclaimer-callout">
+              <div class="disclaimer-header">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i> Investigative Notice &amp; Evidentiary Disclaimer
+              </div>
+              <p class="disclaimer-text">
+                <strong>The system produces evidence-based leads, not definitive legal attribution.</strong> AQUASHIELD provides objective remote sensing intelligence and probabilistic attribution models to direct maritime law enforcement, coast guards, and port state control officers for in-situ physical ballast sampling, oil-fingerprinting, and judicial verification.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       DATA AND METHODOLOGY SECTION
+       ========================================================================= -->
+  <section id="methodology" class="methodology-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <i data-lucide="book-open" class="w-4 h-4"></i> Scientific Framework
+        </div>
+        <h2 class="section-title">Data Sources &amp; Attribution Methodology</h2>
+        <p class="section-desc">
+          A transparent multi-source architecture fusing satellite remote sensing, global AIS terrestrial and satellite streams, and hydrodynamic ocean drift modeling.
+        </p>
+      </div>
+
+      <div class="methodology-grid">
+        <!-- Card 1: Remote Sensing -->
+        <div class="method-card">
+          <div class="method-card-header">
+            <div class="method-icon"><i data-lucide="satellite" class="w-5 h-5"></i></div>
+            <h3>Satellite Remote Sensing</h3>
+          </div>
+          <p>
+            Primary detection relies on Sentinel-1 C-Band Synthetic Aperture Radar (SAR) measuring surface capillary wave damping (Bragg scattering damping). Hydrocarbon slicks flatten high-frequency ripples, appearing as distinctive low-backscatter dark signatures. Optical multispectral sensors (Sentinel-2 MSI) provide complementary color contrast in sun-glint geometry and false-color hydrocarbon indexing.
+          </p>
+        </div>
+
+        <!-- Card 2: AIS Vessel Movements -->
+        <div class="method-card">
+          <div class="method-card-header">
+            <div class="method-icon"><i data-lucide="navigation" class="w-5 h-5"></i></div>
+            <h3>AIS Vessel Tracking Data</h3>
+          </div>
+          <p>
+            Continuous ingestion of Class A and Class B Automatic Identification System (AIS) messages across satellite (S-AIS) and terrestrial (T-AIS) receiver constellations. Trajectories undergo Kalman filtering, kinematic plausibility validation, and speed profile tracking to identify suspicious slowdowns (typically 3 to 5 knots during oily bilge pumping).
+          </p>
+        </div>
+
+        <!-- Card 3: MetOcean Drift Modeling -->
+        <div class="method-card">
+          <div class="method-card-header">
+            <div class="method-icon"><i data-lucide="wind" class="w-5 h-5"></i></div>
+            <h3>Weather &amp; Ocean Conditions</h3>
+          </div>
+          <p>
+            Real-time hydrodynamic advection incorporates Copernicus Marine Service (CMEMS) hourly ocean surface currents, NOAA GFS 10-meter wind fields (applying standard 3.2% windage transfer and Coriolis deflection angle), and wave Stokes drift. The reverse Lagrangian particle transport model solves the inverse advection equation to trace slick centroids back to release coordinates.
+          </p>
+        </div>
+
+        <!-- Card 4: Proximity & Anomaly Analysis -->
+        <div class="method-card">
+          <div class="method-card-header">
+            <div class="method-icon"><i data-lucide="cpu" class="w-5 h-5"></i></div>
+            <h3>Attribution &amp; Anomaly Analytics</h3>
+          </div>
+          <p>
+            Candidate vessels are scored across four weighted forensic vectors: Closest Point of Approach (CPA) distance to the hindcasted discharge origin, temporal synchronization between vessel passage and slick weathering age, vessel deadweight/type (tankers vs non-cargo), and anomalous behavioral indicators including AIS transponder deactivations and zigzag course deviations.
+          </p>
+        </div>
+      </div>
+
+      <!-- Uncertainty, False Positives & Expert Review Banner -->
+      <div class="uncertainty-banner">
+        <div class="uncertainty-icon-large">
+          <i data-lucide="shield-alert" class="w-10 h-10"></i>
+        </div>
+        <div>
+          <h3 class="uncertainty-title">Managing Uncertainty, False Positives &amp; Human-in-the-Loop Verification</h3>
+          <p class="uncertainty-desc">
+            Satellite radar images naturally exhibit low-backscatter phenomena that resemble petroleum slicks, such as biogenic surfactant films, algal blooms, grease ice, and low-wind calm water patches (&lt;3 m/s). Furthermore, rogue vessels may engage in AIS spoofing or deliberate GPS offset manipulation. Consequently, AQUASHIELD enforces rigorous multi-spectral cross-validation, weather normalization, and requires human maritime expert verification before any formal regulatory or legal escalation.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       COURT-READY EVIDENCE DOSSIER MODAL
+       ========================================================================= -->
+  <div id="dossier-modal-overlay" class="modal-overlay">
+    <div class="dossier-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i data-lucide="file-check-2" class="w-5 h-5 text-cyan"></i>
+          <span>IMO MARPOL Annex I Forensic Lead Dossier</span>
+        </div>
+        <button id="btn-close-dossier" class="close-modal-btn">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" id="dossier-modal-content">
+        <!-- Cryptographic Scene Hash Strip -->
+        <div class="dossier-hash-strip">
+          <span>SHA-256 SCENE HASH:</span>
+          <span class="hash-val" id="dossier-sha256">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem;">
+          <div class="evidence-card">
+            <span class="lbl">INCIDENT ID</span>
+            <div class="val text-cyan" id="dossier-incident-id">OSI-MALACCA-2026-084</div>
+            <span class="sub" id="dossier-location">Strait of Malacca TSS Sector</span>
+          </div>
+          <div class="evidence-card">
+            <span class="lbl">PRIMARY SUSPECT</span>
+            <div class="val text-red" id="dossier-suspect-name">MT OCEAN PHOENIX</div>
+            <span class="sub" id="dossier-suspect-meta">IMO 9482190 | Flag: Panama | VLCC Tanker</span>
+          </div>
+        </div>
+
+        <div style="background: #080d1e; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; margin-bottom: 1.2rem;">
+          <h4 style="font-size: 0.82rem; font-family: var(--font-mono); color: var(--cyan-bright); margin-bottom: 0.5rem; text-transform: uppercase;">
+            Volumetric &amp; Weathering Assessment (Bonn Agreement)
+          </h4>
+          <p style="font-size: 0.78rem; line-height: 1.5; color: #cbd5e1;" id="dossier-volumetric-text">
+            Slick surface area of 16.5 km² with predominant Code 4 (Continuous True Oil) and Code 5 (Heavy Black Oil Emulsion). Estimated total discharge volume is 310.5 m³ (~1,950 barrels), vastly exceeding MARPOL Annex I 15 ppm instantaneous discharge limits.
+          </p>
+        </div>
+
+        <div style="background: #080d1e; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; margin-bottom: 1.2rem;">
+          <h4 style="font-size: 0.82rem; font-family: var(--font-mono); color: var(--cyan-bright); margin-bottom: 0.5rem; text-transform: uppercase;">
+            Hydrodynamic Origin Backtrack Coordinates
+          </h4>
+          <p style="font-size: 0.78rem; line-height: 1.5; color: #cbd5e1;" id="dossier-origin-text">
+            Reverse particle advection traces release origin point to Lat: 2.4518°N, Lon: 101.8842°E at 02:14 UTC. MT OCEAN PHOENIX crossed within 0.08 nautical miles of this origin at 02:16 UTC with trailing slick actively attached to stern.
+          </p>
+        </div>
+
+        <div class="legal-disclaimer-callout" style="margin-top: 0;">
+          <div class="disclaimer-header">
+            <i data-lucide="info" class="w-4 h-4"></i> Legal Evidentiary Note
+          </div>
+          <p class="disclaimer-text">
+            This document represents a generated investigative lead package. Final administrative penalties and criminal prosecution require in-situ sample verification, bilge logbook inspection, and formal port state control examination.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btn-print-dossier" class="btn btn-secondary btn-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print / Export PDF
+        </button>
+        <button id="btn-download-json" class="btn btn-primary btn-sm">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Telemetry JSON
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       FOOTER
+       ========================================================================= -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <!-- Col 1: Brand & Mission -->
+        <div class="footer-brand-col">
+          <div class="brand-name">
+            AQUASHIELD
+          </div>
+          <p>
+            Autonomous satellite surveillance, hydrodynamic ocean drift hindcasting, and AIS vessel attribution protecting global marine ecosystems from illegal oily waste discharges.
+          </p>
+        </div>
+
+        <!-- Col 2: Platform Links -->
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="#dashboard">Live Surveillance Map</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#capabilities">Key Capabilities</a></li>
+            <li><a href="#investigation">Investigation Example</a></li>
+            <li><a href="#methodology">Data &amp; Methodology</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Resources & Standards -->
+        <div class="footer-col">
+          <h4>Compliance &amp; API</h4>
+          <ul>
+            <li><a href="#methodology">IMO MARPOL Annex I Standards</a></li>
+            <li><a href="#methodology">Bonn Agreement Code (BAOAC)</a></li>
+            <li><a href="#methodology">EMSA CleanSeaNet Protocol</a></li>
+            <li><a href="/api/health" target="_blank">REST API Health Endpoint</a></li>
+            <li><a href="/api/scenarios" target="_blank">Telemetry Data Feeds</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: Institutional & Legal -->
+        <div class="footer-col">
+          <h4>Legal &amp; Contact</h4>
+          <ul>
+            <li><a href="#methodology">Contact Operations Center</a></li>
+            <li><a href="#methodology">Privacy Policy</a></li>
+            <li><a href="#methodology">Terms of Intelligence Access</a></li>
+            <li><a href="#methodology">Report Illicit Discharge</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="footer-bottom-bar">
+        <div>
+          &copy; 2026 AQUASHIELD. All rights reserved. Built for maritime domain awareness and ocean conservation.
+        </div>
+        <div class="footer-badges">
+          <span class="compliance-badge">
+            <span class="pulse-dot-green"></span> SYSTEM STATUS: OPERATIONAL (v2.4)
+          </span>
+          <span class="compliance-badge">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-cyan"></i> MARPOL ANNEX I COMPLIANT
+          </span>
+          <span class="compliance-badge">
+            <i data-lucide="anchor" class="w-3.5 h-3.5 text-cyan"></i> UN SDG 14: LIFE BELOW WATER
+          </span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Application Logic -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
